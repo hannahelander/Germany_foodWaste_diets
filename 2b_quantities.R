@@ -3,10 +3,11 @@
 # Quantities
 # ----------------------------------------------------
 # needed functions: step.calculator() and step.calculator2()
-# needed data: Y-matrix & waste
 
-#### read waste data
+#### load data (if needed):
+Y     <- readRDS(paste0(path,"2013_Y.rds"))
 waste <- read.csv2(file = "data/waste_data_frame.csv")
+index <- read.csv2(file = "data/index_data_frame.csv")
 
 
 #########################################################
@@ -18,7 +19,7 @@ Y_tot <- Y[,"DEU_Food"]
 
 # per capita footprint
 population <- 82442336
-Y_capita <- sum(t_tot) / population             # gives ~1 ton
+Y_capita <- sum(Y_tot) / population             # gives ~1 ton
 
 # create output matrix
 supply_chain_Y <- data.frame(Scenario = rep("SQ", 4),
@@ -60,6 +61,10 @@ rm(Output_processing)
 Output_consumption  <- step.calculator(waste$final_consumption, Output_distribution[[2]])
 supply_chain_Y$Consumption        <- Output_consumption[[1]]
 rm(Output_distribution)
+
+###### save the Y matrix that represent only "eaten food": ########
+eaten_food_plants <- Output_consumption[[2]]
+write.csv2(eaten_food_plants, file = "data/eaten_food_plants.csv")     # write to file in data-folder! 
 rm(Output_consumption)
 
 
@@ -72,6 +77,7 @@ rm(Output_consumption)
 Y_lvst <- Y[,"DEU_Food"] 
 Y_lvst[index$product_group %in% c("Crop products", "Primary crops")] <- 0  # Set Y to 0 for all plant-based products
 
+sum(Y_lvst)/population
 
 ####################################################
 ### Calculate Footprints of flows and fill in Table: 
@@ -99,7 +105,14 @@ rm(Output_processing)
 Output_consumption  <- step.calculator2(waste$final_consumption, Output_distribution[[2]])
 supply_chain_Y$Consumption[3:4]        <- Output_consumption[[1]]
 rm(Output_distribution)
+
+
+####### save the Y matrix that represent only "eaten food":########
+eaten_food_lvst <- Output_consumption[[2]]
+write.csv2(eaten_food_lvst, file = "data/eaten_food_lvst.csv")     # write to file in data-folder! 
 rm(Output_consumption)
+
+
 
 
 ########### Write to File #############

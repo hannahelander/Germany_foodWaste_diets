@@ -15,11 +15,11 @@ waste <- read.csv2(file = "data/waste_data_frame.csv")
 
 
 #### Function to calculate flows per step  #####
-step.calculator <- function(waste_step, FP){                      # waste_step is column in waste, eg. waste$harvest_production?
+step.calculator <- function(waste_step, FP){                      # waste_step is a column in the data-frame "waste", eg. waste$harvest_production?
   FP_waste <- FP * waste_step / 100
   FP_cont <- FP  - FP_waste              
   FP_step <- c(sum(FP_cont), sum(FP_waste), NA, NA)
-  output <- list(FP_step, FP_cont)                                # gives one vector with 4 elements and one new footprint-matrix
+  output <- list(FP_step, FP_cont)                                # gives one vector with 4 elements & a new footprint-matrix (or Y-matrix)
   return(output)
 }
 
@@ -30,6 +30,7 @@ step.calculator2 <- function(waste_step, FP){                      # waste_step 
   output <- list(FP_step, FP_cont)                                # gives a vector with only 2 elements
   return(output)
 }
+
 #########################################################
 # Biomass footprints along the Supply Chain - Status Quo 
 #########################################################
