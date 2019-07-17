@@ -22,6 +22,24 @@ add.percentage <- function(diet){  # take a data frame as input and return it wi
   return(diet)
 }
 
+
+# Function that recalculates the amounts of each product according to DGE_rec in % (The total amount of kg remains the same)#
+#diet.converter <- function(Yvector){
+#  for (i in 1:length(DGE_table)){
+#    Yvector[which(index$DGE_group == DGE_table[1,i])] <- Yvector[which(index$DGE_group == DGE_table[1,i])] /    # takes the existing value, divides it with existing % of product group, multiplies it with desired percentage
+#      (DGE_table["SQ_percentage", i] * DGE_table["DGE_rec",i])
+#  }
+#  return(Yvector)
+#}
+
+diet.converter <- function(Yvector){
+  for (i in 1:length(DGE_table)){
+    Yvector[which(index$DGE_group == DGE_table[1,i])] <- lapply(Yvector[which(index$DGE_group == DGE_table[1,i])], "/",    # takes the existing value, divides it with existing % of product group, multiplies it with desired percentage
+      (as.numeric(DGE_table["SQ_percentage", i]) * as.numeric(DGE_table["DGE_rec",i])))
+  }
+  return(Yvector)
+}
+
 ######################################
 ### 
 
@@ -61,24 +79,24 @@ index$diet_group[index$com_group == "Animal fats"] <- "Meat"
 #################
 
 # Create data-frame for scenarios, splitted in diet-groups (and sub-groups)
-Eaten <- data.frame(cereals_potatoes = c(sum(Y_eaten_plants[index$diet_group == "Cereals and potatoes"]) / population, NA), 
-                    vegetables = c(sum(Y_eaten_plants[index$diet_group == "Vegetables, pulses, spices"]) / population, NA),
-                    fruits     = c(sum(Y_eaten_plants[index$diet_group == "Fruits"]) / population, NA),
-                    oil_crops_nuts = c(sum(Y_eaten_plants[index$diet_group == "Oil crops and nuts"]) / population, NA),
-                    veg_oils   = c(sum(Y_eaten_plants[index$diet_group == "Vegetable oils"]) / population, NA),
-                    Oil_cakes  = c(sum(Y_eaten_plants[index$diet_group == "Oil cakes"]) / population, NA),
-                    fibre_crops = c(sum(Y_eaten_plants[index$diet_group == "Fibre crops"]) / population, NA),
-                    sugar      = c(sum(Y_eaten_plants[index$diet_group == "Sugar, sweeteners"]) / population, NA),
-                    sugar_crops = c(sum(Y_eaten_plants[index$diet_group == "Sugar crops"]) / population, NA),
-                    alcohol    = c(sum(Y_eaten_plants[index$diet_group == "Alcohol"]) / population, NA),
-                    coffee_tea = c(sum(Y_eaten_plants[index$diet_group == "Coffee, tea, cocoa"]) / population, NA),
-                    meat       = c(sum(Y_eaten_lvst[index$diet_group == "Meat"]) / population, NA),
-                    milk       = c(sum(Y_eaten_lvst[index$diet_group == "Milk"]) / population, NA),
-                    eggs       = c(sum(Y_eaten_lvst[index$diet_group == "Eggs"]) / population, NA),
-                    fish       = c(sum(Y_eaten_lvst[index$diet_group == "Fish"]) / population, NA), 
-                    live_animals = c(sum(Y_eaten_lvst[index$diet_group == "Live animals"]) / population, NA), 
-                    fodder = c(sum(Y_eaten_lvst[index$diet_group == "Fodder crops, grazing"]) / population, NA),
-                    honey = c(sum(Y_eaten_lvst[index$diet_group == "Honey"]) / population, NA), 
+Eaten <- data.frame(cereals_potatoes = c(sum(Y_eaten[index$diet_group == "Cereals and potatoes"]) / population, NA), 
+                    vegetables = c(sum(Y_eaten[index$diet_group == "Vegetables, pulses, spices"]) / population, NA),
+                    fruits     = c(sum(Y_eaten[index$diet_group == "Fruits"]) / population, NA),
+                    oil_crops_nuts = c(sum(Y_eaten[index$diet_group == "Oil crops and nuts"]) / population, NA),
+                    veg_oils   = c(sum(Y_eaten[index$diet_group == "Vegetable oils"]) / population, NA),
+                    Oil_cakes  = c(sum(Y_eaten[index$diet_group == "Oil cakes"]) / population, NA),
+                    fibre_crops = c(sum(Y_eaten[index$diet_group == "Fibre crops"]) / population, NA),
+                    sugar      = c(sum(Y_eaten[index$diet_group == "Sugar, sweeteners"]) / population, NA),
+                    sugar_crops = c(sum(Y_eaten[index$diet_group == "Sugar crops"]) / population, NA),
+                    alcohol    = c(sum(Y_eaten[index$diet_group == "Alcohol"]) / population, NA),
+                    coffee_tea = c(sum(Y_eaten[index$diet_group == "Coffee, tea, cocoa"]) / population, NA),
+                    meat       = c(sum(Y_eaten[index$diet_group == "Meat"]) / population, NA),
+                    milk       = c(sum(Y_eaten[index$diet_group == "Milk"]) / population, NA),
+                    eggs       = c(sum(Y_eaten[index$diet_group == "Eggs"]) / population, NA),
+                    fish       = c(sum(Y_eaten[index$diet_group == "Fish"]) / population, NA), 
+                    live_animals = c(sum(Y_eaten[index$diet_group == "Live animals"]) / population, NA), 
+                    fodder = c(sum(Y_eaten[index$diet_group == "Fodder crops, grazing"]) / population, NA),
+                    honey = c(sum(Y_eaten[index$diet_group == "Honey"]) / population, NA), 
                     row.names = c("SQ_capita", "SQ_percentage"))
 # ignoring 'Wood', 'Hides, skines, wool', 'Tobacco, rubber', 'Ethanol'
 
@@ -86,13 +104,16 @@ Eaten <- data.frame(cereals_potatoes = c(sum(Y_eaten_plants[index$diet_group == 
 Diets = Eaten[, which(!Eaten[1,] == 0)]          #removing categories == 0
 Diets$milk[1] <- 0.069715                        # Replacing Milk-equivalents in tonnes of milk products (source: NEMONIT)
 
-# DIETS EXCLUDING ALCOHOL:
+# DIETS EXCLUDING DRINKS:
 alcohol <- Diets$alcohol[1]
 coffee_tea <- Diets$coffee_tea[1]
 Diets_food = Diets[, which(!Diets[1,] == alcohol & !Diets[1,] == coffee_tea)]
 
-Diets_food <- add.percentage(Diets_food)
 Diets <- add.percentage(Diets)
+Diets_food <- add.percentage(Diets_food)
+
+
+######## CHECK OIL CROPS AND NUTS
 
 
 
@@ -100,68 +121,41 @@ Diets <- add.percentage(Diets)
 
 # Create an additional category based on DGE's 6 groups:
 index$DGE_group <- index$diet_group
-levels(index$DGE_group) <- c(levels(index$DGE_group), "Meat, sausages, fish, eggs", "Sugar & honey", "vegetables incl. legumes")
+levels(index$DGE_group) <- c(levels(index$DGE_group), "Meat, sausages, fish, eggs", "Sugar & honey", "vegetables incl. legumes", "excluded")
 index$DGE_group[index$DGE_group == "Eggs"] <- "Meat, sausages, fish, eggs"
 index$DGE_group[index$DGE_group == "Fish"] <- "Meat, sausages, fish, eggs"
 index$DGE_group[index$DGE_group == "Meat"] <- "Meat, sausages, fish, eggs"
 index$DGE_group[index$DGE_group == "Sugar, sweeteners"] <- "Sugar & honey"
 index$DGE_group[index$DGE_group == "Honey"] <- "Sugar & honey"
-index$DGE_group[index$DGE_group == "Oil crops"] <- "vegetables incl. legumes"
+index$DGE_group[index$DGE_group == "Oil crops and nuts"] <- "vegetables incl. legumes"
 index$DGE_group[index$DGE_group == "Vegetables, pulses, spices"] <- "vegetables incl. legumes"
 
-
-length(unique(index$DGE_group))
-
-
-# Create Diet representation in DGE_groups (excluding alcohol, coffee, tea, cacao):
-Diets_DGEgroups <- data.frame(cereals_potatoes = c(sum(Y_eaten_plants[index$DGE_group == "Cereals and potatoes"]) / population, NA), 
-                              vegetables_legumes = c(sum(Y_eaten_plants[index$DGE_group == "vegetables incl. legumes"]) / population, NA),
-                              veg_oils      = c(sum(Y_eaten_plants[index$DGE_group == "Vegetable oils"]) / population, NA),
-                              meat_egg_fish = c(sum(Y_eaten_lvst[index$DGE_group == "Meat, sausages, fish, eggs"]) / population, NA),
-                              fruits        = c(sum(Y_eaten_plants[index$DGE_group == "Fruits"]) / population, NA),
-                              sugar_honey   = c(sum(Y_eaten_plants[index$DGE_group == "Sugar & honey"]) / population, NA),
-                              milk          = c(0.069715, NA), 
-                              excluded      = c(sum())
-                              row.names = c("SQ_capita", "SQ_percentage")) # data from NEOMIT
-# add percentage
-Diets_DGEgroups <- add.percentage(Diets_DGEgroups)
+index$DGE_group[!index$DGE_group %in% c("Meat, sausages, fish, eggs", "Sugar & honey", "vegetables incl. legumes", "Cereals and potatoes", 
+                                        "Vegetable oils", "Milk", "Fruits")]  <- "excluded"
 
 
-# create new Y-matrix for DGE recommendations:
-Y_DGE_rec <- Y_eaten_plants + Y_eaten_lvst
-
-for (i in 1:length(Diets_food)){
-
-   DGE_rec[2,i] <- SQ_capita/SQ_percentage * new_percentage
-  
-}
-
-# Function that recalculates the amounts of each product according to DGE_rec in % (The total amount of kg remains the same)
-diet.converter <- function(Yvector){
-    for (i in 1:lengtgh(unique(index$DGE_group))){
-    DGEgroup <- unique(index$DGE_group)
-    Ymatrix[index$DGE_group == DGEgroup[i]] <- Ymatrix[index$DGE_group == DGEgroup[i]] /              # takes the existing value, divides it with existing % of product group, multiplies it with desired percentage
-    Diets_DGEgroups["SQ_percentage", DGE_group[i]] * DGE_rec_percentage[DGEgroup[i],"percent"]/100
-    }
-  return(Ymatrix)
-}
-
-
-#  rbind()
-  
-DGEgroup <- "milk"
-
-DGE_rec_percentage["milk", 1]
+#length(unique(index$DGE_group))
 
 
 
+# Create Diet representation in DGE_groups and adding DGE recommendations in ratio (excluding alcohol, coffee, tea, cacao): 
+Diets_DGEgroups <- data.frame(cereals_potatoes = c(sum(Y_eaten[index$DGE_group == "Cereals and potatoes"]) / population, NA, 0.3), #order of columns must stay the same)
+                              excluded      = c(0, NA, 0),
+                              vegetables_legumes = c(sum(Y_eaten[index$DGE_group == "vegetables incl. legumes"]) / population, NA, 0.26),
+                              fruits        = c(sum(Y_eaten[index$DGE_group == "Fruits"]) / population, NA, 0.17), 
+                              sugar_honey   = c(sum(Y_eaten[index$DGE_group == "Sugar & honey"]) / population, NA, 0),
+                              veg_oils       = c(sum(Y_eaten[index$DGE_group == "Vegetable oils"]) / population, NA, 0.02),
+                              milk          = c(0.069715, NA, 0.18),                                                      # data from NEOMIT
+                              meat_egg_fish = c(sum(Y_eaten[index$DGE_group == "Meat, sausages, fish, eggs"]) / population, NA, 0.07),
+                              row.names = c("SQ_capita", "SQ_percentage", "DGE_rec"))
 
-index$item_code %in% vegetables
+Diets_DGEgroups <- add.percentage(Diets_DGEgroups)# add percentage
+DGE_table <- rbind(as.character(unique(index$DGE_group)), Diets_DGEgroups[,1:8])   # create table including DGE_groups and percentage 
 
-# Do the neccessary changes to meet the proportins of different product groups recommened by the DGE
-DGE_rec_percentage <- data.frame(percent = c(2, 30, 26, 17, 18, 7, 0), 
-                                 row.names = c("fats_oils", "cereals_potatoes", "vegetable_salad", "fruit", "milk", "meat_fish_eggs", "Sugar & honey"))
-sum(DGE_rec[,2])
 
-paste0("DGE_rec_percentage$","fruits")
+### create new Y-matrix for DGE recommendations:
+Y_DGE_rec <- diet.converter(Y_eaten)
+
+#### NEED TO CHANGE THE MILK BACK TO MILK-EQUIVALENTS! HOW!?
+
 
