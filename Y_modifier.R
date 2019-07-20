@@ -1,14 +1,16 @@
 #############################
-# Create different scenarios by changing consumer behaviour 
-# 1) Diets
-# 2) Food waste behaviour (in retail and households)
+# Create different scenarios by changing consumer behaviour in relation to Diets 
+# 1) the script take the resulting diet after having removed all waste streams
+# 2) it then modifies the diet according to different scenarios (eg. DGE_rec), for this part, new categorization is needed
+# 3) it then adds the food wastage in each step to be able to calculate the footprint including embedded wastestreams
 
-######## remove waste from consumption to estimate "real diets"
+######## 1) remove waste from consumption to estimate "real diets"
 # read Y-matrices of eaten food (Germany):
 Y_eaten_plants <- read.csv2(file = "data/eaten_food_plants.csv")[,2]
 Y_eaten_lvst <- read.csv2(file = "data/eaten_food_lvst.csv")[,2]
 Y_eaten <- Y_eaten_plants + Y_eaten_lvst
 # load index!
+
 
 
 ############### Functions ###############
@@ -23,25 +25,35 @@ add.percentage <- function(diet){  # take a data frame as input and return it wi
 }
 
 
-# Function that recalculates the amounts of each product according to DGE_rec in % (The total amount of kg remains the same)#
-#diet.converter <- function(Yvector){
-#  for (i in 1:length(DGE_table)){
-#    Yvector[which(index$DGE_group == DGE_table[1,i])] <- Yvector[which(index$DGE_group == DGE_table[1,i])] /    # takes the existing value, divides it with existing % of product group, multiplies it with desired percentage
-#      (DGE_table["SQ_percentage", i] * DGE_table["DGE_rec",i])
-#  }
-#  return(Yvector)
-#}
+# Function to group Yvector into DGE-groups: 
+DGE.grouper <- function(Yvector){
+  DGE_groups <- data.frame(cereals_potatoes = c(sum(Yvector[index$DGE_group == "Cereals and potatoes"]) / population, NA, 0.3), #order of columns must stay the same)
+                           excluded      = c(0, NA, 0),
+                           vegetables_legumes = c(sum(Yvector[index$DGE_group == "vegetables incl. legumes"]) / population, NA, 0.26),
+                           fruits        = c(sum(Yvector[index$DGE_group == "Fruits"]) / population, NA, 0.17), 
+                           sugar_honey   = c(sum(Yvector[index$DGE_group == "Sugar & honey"]) / population, NA, 0),
+                           veg_oils       = c(sum(Yvector[index$DGE_group == "Vegetable oils"]) / population, NA, 0.02),
+                           milk          = c(sum(Yvector[index$DGE_group == "Milk"]) / population, NA, 0.18),                                                      # data from NEOMIT
+                           meat_egg_fish = c(sum(Yvector[index$DGE_group == "Meat, sausages, fish, eggs"]) / population, NA, 0.07),
+                           row.names = c("SQ_capita", "SQ_percentage", "DGE_rec"))
+  DGE_groups <- add.percentage(DGE_groups)
+  
+  return(DGE_groups)
+}
 
-diet.converter <- function(Yvector){
-  for (i in 1:length(DGE_table)){
-    Yvector[which(index$DGE_group == DGE_table[1,i])] <- lapply(Yvector[which(index$DGE_group == DGE_table[1,i])], "/",    # takes the existing value, divides it with existing % of product group, multiplies it with desired percentage
-      (as.numeric(DGE_table["SQ_percentage", i]) * as.numeric(DGE_table["DGE_rec",i])))
-  }
-  return(Yvector)
+
+
+# Function to add the consumer waste to diets (step 3):
+add.consumer.waste <- function(Yeaten){
+  Yreal <- Yeaten/(100-waste$final_consumption)*100
+  Yreal <- Yreal/(100-waste$distribution)*100
+  Yreal <- Yreal/(100-waste$processing)*100
+  Yreal <- Yreal/(100-waste$storage_transport)*100
+  return(Yreal)
 }
 
 ######################################
-### 
+### ADDING A NEW CATEGORIZATION
 
 # DGE Recommendations (https://www.dge.de/fileadmin/public/doc/fm/dgeinfo/DGEinfo-06-2019-Vollwertige-Ernaehrung_aheadofprint.pdf)
 # 6 groups (excluding drinks), with subcategories
@@ -75,7 +87,6 @@ index$diet_group[index$com_group == "Animal fats"] <- "Meat"
 #unique(index$diet_group)
 #unique(products$Com.Group)
 #length(unique(index$diet_group))
-
 #################
 
 # Create data-frame for scenarios, splitted in diet-groups (and sub-groups)
@@ -101,8 +112,12 @@ Eaten <- data.frame(cereals_potatoes = c(sum(Y_eaten[index$diet_group == "Cereal
 # ignoring 'Wood', 'Hides, skines, wool', 'Tobacco, rubber', 'Ethanol'
 
 
+# MODIFYING DATA TO SUIT THE PURPOSE 
 Diets = Eaten[, which(!Eaten[1,] == 0)]          #removing categories == 0
 Diets$milk[1] <- 0.069715                        # Replacing Milk-equivalents in tonnes of milk products (source: NEMONIT)
+
+Diets$fodder[1] <- 0 # OBS!! There are some very small negative values for fodder, that we needt to set to 0
+
 
 # DIETS EXCLUDING DRINKS:
 alcohol <- Diets$alcohol[1]
@@ -116,8 +131,8 @@ Diets_food <- add.percentage(Diets_food)
 ######## CHECK OIL CROPS AND NUTS
 
 
-
 ########### Scenario 1 - DGE recommended Diet ##########
+# ADDING ANOTHER CATEGORIZATION
 
 # Create an additional category based on DGE's 6 groups:
 index$DGE_group <- index$diet_group
@@ -134,9 +149,6 @@ index$DGE_group[!index$DGE_group %in% c("Meat, sausages, fish, eggs", "Sugar & h
                                         "Vegetable oils", "Milk", "Fruits")]  <- "excluded"
 
 
-#length(unique(index$DGE_group))
-
-
 
 # Create Diet representation in DGE_groups and adding DGE recommendations in ratio (excluding alcohol, coffee, tea, cacao): 
 Diets_DGEgroups <- data.frame(cereals_potatoes = c(sum(Y_eaten[index$DGE_group == "Cereals and potatoes"]) / population, NA, 0.3), #order of columns must stay the same)
@@ -150,12 +162,32 @@ Diets_DGEgroups <- data.frame(cereals_potatoes = c(sum(Y_eaten[index$DGE_group =
                               row.names = c("SQ_capita", "SQ_percentage", "DGE_rec"))
 
 Diets_DGEgroups <- add.percentage(Diets_DGEgroups)# add percentage
-DGE_table <- rbind(as.character(unique(index$DGE_group)), Diets_DGEgroups[,1:8])   # create table including DGE_groups and percentage 
+Diets_DGEgroups <- data.frame(t(Diets_DGEgroups))[1:8,]
+Diets_DGEgroups$DGE_group <- as.character(unique(index$DGE_group))
 
 
-### create new Y-matrix for DGE recommendations:
-Y_DGE_rec <- diet.converter(Y_eaten)
+###### NEW Y-MATRIX ############## 
+# create new Y-matrix for DGE recommendations:
+Y_DGE_rec <- Y_eaten / Diets_DGEgroups$SQ_percentage[match(index$DGE_group,Diets_DGEgroups$DGE_group)] * 
+  Diets_DGEgroups$DGE_rec[match(index$DGE_group,Diets_DGEgroups$DGE_group)]
+Y_DGE_rec[!is.finite(Y_DGE_rec)] <- 0
+sum(Y_DGE_rec)
+sum(Y_eaten)
 
-#### NEED TO CHANGE THE MILK BACK TO MILK-EQUIVALENTS! HOW!?
 
+Y_DGE_demand <- add.consumer.waste(Y_DGE_rec)
+sum(Y_DGE_demand)
+
+
+
+#########
+
+# Function that recalculates the amounts of each product according to DGE_rec in % (The total amount of kg remains the same)#
+#diet.converter <- function(Yvector){
+#  for (i in 1:length(DGE_table)){
+#    Yvector[which(index$DGE_group == DGE_table[1,i])] <- Yvector[which(index$DGE_group == DGE_table[1,i])] /    # takes the existing value, divides it with existing % of product group, multiplies it with desired percentage
+#      (DGE_table["SQ_percentage", i] * DGE_table["DGE_rec",i])
+#  }
+#  return(Yvector)
+#}
 
