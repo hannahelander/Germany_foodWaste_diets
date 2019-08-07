@@ -11,6 +11,8 @@ Y_eaten_lvst <- read.csv2(file = "data/eaten_food_lvst.csv")[,2]
 Y_eaten <- Y_eaten_plants + Y_eaten_lvst
 # load index!
 
+# POPULATION 2013
+population <- 80800000 # lack detail data with trustable source
 
 
 ############### Functions ###############
@@ -120,12 +122,12 @@ Diets$fodder[1] <- 0 # OBS!! There are some very small negative values for fodde
 
 
 # DIETS EXCLUDING DRINKS:
-alcohol <- Diets$alcohol[1]
-coffee_tea <- Diets$coffee_tea[1]
-Diets_food = Diets[, which(!Diets[1,] == alcohol & !Diets[1,] == coffee_tea)]
+#alcohol <- Diets$alcohol[1]
+#coffee_tea <- Diets$coffee_tea[1]
+#Diets_food = Diets[, which(!Diets[1,] == alcohol & !Diets[1,] == coffee_tea)]
 
-Diets <- add.percentage(Diets)
-Diets_food <- add.percentage(Diets_food)
+#Diets <- add.percentage(Diets)
+#Diets_food <- add.percentage(Diets_food)
 
 
 ######## CHECK OIL CROPS AND NUTS
@@ -144,7 +146,6 @@ index$DGE_group[index$DGE_group == "Sugar, sweeteners"] <- "Sugar & honey"
 index$DGE_group[index$DGE_group == "Honey"] <- "Sugar & honey"
 index$DGE_group[index$DGE_group == "Oil crops and nuts"] <- "vegetables incl. legumes"
 index$DGE_group[index$DGE_group == "Vegetables, pulses, spices"] <- "vegetables incl. legumes"
-
 index$DGE_group[!index$DGE_group %in% c("Meat, sausages, fish, eggs", "Sugar & honey", "vegetables incl. legumes", "Cereals and potatoes", 
                                         "Vegetable oils", "Milk", "Fruits")]  <- "excluded"
 
@@ -169,16 +170,18 @@ Diets_DGEgroups$DGE_group <- as.character(unique(index$DGE_group))
 ###### NEW Y-MATRIX ############## 
 # create new Y-matrix for DGE recommendations:
 Y_DGE_rec <- Y_eaten / Diets_DGEgroups$SQ_percentage[match(index$DGE_group,Diets_DGEgroups$DGE_group)] * 
-  Diets_DGEgroups$DGE_rec[match(index$DGE_group,Diets_DGEgroups$DGE_group)]
+  Diets_DGEgroups$DGE_rec[match(index$DGE_group,Diets_DGEgroups$DGE_group)]                          
 Y_DGE_rec[!is.finite(Y_DGE_rec)] <- 0
+
 sum(Y_DGE_rec)
 sum(Y_eaten)
 
+###### Add food waste for each step (create the corresponding hypotetical Y-vector)
+Y_DGE <- add.consumer.waste(Y_DGE_rec)
+sum(Y_DGE)            #shows that sum Y_DGE is slightly smaller than Y SQ (73 resp. 79 thousand) -> realistic
+sum(Y[,"DEU_Food"])
 
-Y_DGE_demand <- add.consumer.waste(Y_DGE_rec)
-sum(Y_DGE_demand)
-
-
+write.csv2(Y_DGE, file = "data/Y_DGE.csv")
 
 #########
 
