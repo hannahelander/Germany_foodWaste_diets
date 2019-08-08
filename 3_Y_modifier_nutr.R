@@ -1,19 +1,13 @@
-##### This script include nutrient calculations for diets
+####### 3_Y_modifier_nutr.R
+####### This script include nutrient calculations for diets
 
 items <- read.csv2("input/items_nutr.csv")
 
 #DGErec_diet <- read.csv2("data/DGE_rec.csv")
 #DGErec_diet <- DGErec_diet[,2]
-#SQ_diet <- read.csv2("data/SQ_diet")
-#SQ_diet <- SQ_diet[,2]
 
 Y_eaten <- read.csv2(file = "data/SQ_diet.csv ")
 Y_eaten <- Y_eaten[,2]
-
-#DGE_diet_pp <- DGErec_diet/population
-#SQ_diet_pp  <- SQ_diet/population
-
-  
 items <- read.csv2(file = "input/items_nutr.csv")
 
 #### Create data-frame to store diets in terms of eaten food and consumed nutrients etc.
