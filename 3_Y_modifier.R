@@ -138,7 +138,7 @@ Diets$fodder[1] <- 0 # OBS!! There are some very small negative values for fodde
 
 # Create an additional category based on DGE's 6 groups:
 index$DGE_group <- index$diet_group
-levels(index$DGE_group) <- c(levels(index$DGE_group), "Meat, sausages, fish, eggs", "Sugar & honey", "vegetables incl. legumes", "excluded")
+levels(index$DGE_group) <- c(levels(index$DGE_group), "Meat, sausages, fish, eggs", "Sugar & honey", "vegetables incl. legumes", "Alcohol and sugar", "excluded")
 index$DGE_group[index$DGE_group == "Eggs"] <- "Meat, sausages, fish, eggs"
 index$DGE_group[index$DGE_group == "Fish"] <- "Meat, sausages, fish, eggs"
 index$DGE_group[index$DGE_group == "Meat"] <- "Meat, sausages, fish, eggs"
@@ -146,8 +146,10 @@ index$DGE_group[index$DGE_group == "Sugar, sweeteners"] <- "Sugar & honey"
 index$DGE_group[index$DGE_group == "Honey"] <- "Sugar & honey"
 index$DGE_group[index$DGE_group == "Oil crops and nuts"] <- "vegetables incl. legumes"
 index$DGE_group[index$DGE_group == "Vegetables, pulses, spices"] <- "vegetables incl. legumes"
+index$DGE_group[index$DGE_group == "Alcohol"] <- "Alcohol and sugar"
+index$DGE_group[index$DGE_group == "Sugar, sweeteners"] <- "Alcohol and sugar"
 index$DGE_group[!index$DGE_group %in% c("Meat, sausages, fish, eggs", "Sugar & honey", "vegetables incl. legumes", "Cereals and potatoes", 
-                                        "Vegetable oils", "Milk", "Fruits")]  <- "excluded"
+                                        "Vegetable oils", "Milk", "Fruits", "Alcohol and sugar")]  <- "excluded"
 
 
 
@@ -160,6 +162,7 @@ Diets_DGEgroups <- data.frame(cereals_potatoes = c(sum(Y_eaten[index$DGE_group =
                               veg_oils       = c(sum(Y_eaten[index$DGE_group == "Vegetable oils"]) / population, NA, 0.02),
                               milk          = c(0.069715, NA, 0.18),                                                      # data from NEOMIT
                               meat_egg_fish = c(sum(Y_eaten[index$DGE_group == "Meat, sausages, fish, eggs"]) / population, NA, 0.07),
+                              alcohol_sugar = c(sum(Y_eaten[index$DGE_group == "Alcohol and sugar"]) /population, NA, 0.01), ### 0.01 uträknat hur!??????????
                               row.names = c("SQ_capita", "SQ_percentage", "DGE_rec"))
 
 Diets_DGEgroups <- add.percentage(Diets_DGEgroups)# add percentage
@@ -176,12 +179,18 @@ Y_DGE_rec[!is.finite(Y_DGE_rec)] <- 0
 sum(Y_DGE_rec)
 sum(Y_eaten)
 
+# write the dietary scenarios to file (for nutritional analysis)
+write.csv2(Y_DGE, file = "data/DGE_rec.csv")
+write.csv2(Y_eaten, file = "data/SQ_diet")
+
 ###### Add food waste for each step (create the corresponding hypotetical Y-vector)
 Y_DGE <- add.consumer.waste(Y_DGE_rec)
 sum(Y_DGE)            #shows that sum Y_DGE is slightly smaller than Y SQ (73 resp. 79 thousand) -> realistic
 sum(Y[,"DEU_Food"])
 
+# write the corresponding Y vector to file (for supply chain analysis)
 write.csv2(Y_DGE, file = "data/Y_DGE.csv")
+
 
 #########
 
